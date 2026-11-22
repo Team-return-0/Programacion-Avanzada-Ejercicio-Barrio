@@ -24,9 +24,9 @@
 
     <div class="btn-group btn-group-sm" role="group" aria-label="Pasos">
       <button class="btn btn-outline-light" id="btnFirst" title="Ir al inicio">⏮</button>
-      <button class="btn btn-outline-light" id="btnPrev" title="Paso anterior">◀</button>
-      <button class="btn btn-outline-light" id="btnPlay" title="Reproducir / pausar">▶</button>
-      <button class="btn btn-outline-light" id="btnNext" title="Paso siguiente">▶|</button>
+      <button class="btn btn-outline-light" id="btnPrev" title="Paso anterior (←)">◀</button>
+      <button class="btn btn-outline-light" id="btnPlay" title="Reproducir / pausar (espacio)">▶</button>
+      <button class="btn btn-outline-light" id="btnNext" title="Paso siguiente (→)">▶|</button>
       <button class="btn btn-outline-light" id="btnLast" title="Ir al final">⏭</button>
     </div>
 
@@ -34,6 +34,7 @@
       🐢<input type="range" class="form-range speed" id="speed" min="0" max="100" value="45">🐇
     </label>
 
+    <button class="btn btn-sm btn-outline-light" id="btnSide" title="Ocultar o mostrar el panel izquierdo">⇤ Panel</button>
     <button class="btn btn-sm btn-outline-light" id="btnNew">🆕 Nuevo</button>
     <button class="btn btn-sm btn-outline-light" id="btnShare">🔗 Compartir</button>
     <button class="btn btn-sm btn-outline-light" id="btnTheme" title="Cambiar tema">🌙</button>
@@ -41,65 +42,112 @@
 </header>
 
 <main class="container-fluid py-3">
-  <div class="row g-3">
+  <div class="layout">
 
-    <!-- ===== Columna izquierda ===== -->
-    <div class="col-lg-4 col-xl-3 d-flex flex-column gap-3">
+    <!-- ===== Panel izquierdo (ancho ajustable) ===== -->
+    <div class="side d-flex flex-column gap-3" id="side">
 
       <section class="card">
-        <div class="card-header fw-semibold">📄 Entrada (<code>barrio.in</code>)</div>
-        <div class="card-body">
-          <div class="d-flex gap-1 flex-wrap mb-2">
-            <button class="btn btn-sm btn-outline-secondary" data-preset="modificado">Ejemplo modificado</button>
-            <button class="btn btn-sm btn-outline-secondary" data-preset="original">Ejemplo original</button>
-            <button class="btn btn-sm btn-outline-secondary" data-preset="random">🎲 Aleatorio</button>
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="fw-semibold">🧪 Caso de prueba</span>
+          <button class="btn btn-sm btn-link ms-auto p-0 collapse-btn" data-collapse="caseBody">▾ Ocultar</button>
+        </div>
+        <div class="card-body d-flex flex-column gap-3 resizable" id="caseBody">
+
+          <div>
+            <label class="form-label small fw-semibold mb-1" for="preset">Casos predefinidos</label>
+            <select id="preset" class="form-select form-select-sm"></select>
+            <div id="presetDesc" class="form-text"></div>
           </div>
-          <textarea id="input" class="form-control font-monospace" rows="11" spellcheck="false"></textarea>
-          <div class="form-text">
-            <code>M N K</code>, K líneas <code>x y v</code> (sin <code>v</code> vale 0),
-            <code>B</code> y B líneas <code>x1 y1 x2 y2</code>.
-          </div>
-          <div id="inputError" class="alert alert-danger py-1 px-2 small mt-2 d-none"></div>
-          <div class="d-grid mt-2">
-            <button class="btn btn-primary btn-sm" id="btnApply">▶ Aplicar</button>
-          </div>
+
+          <fieldset>
+            <legend class="leg">🏙️ Tamaño de la ciudad</legend>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small mb-1" for="fM">Ancho <b>M</b> <span class="text-body-secondary">(x va de 1 a M)</span></label>
+                <input id="fM" type="number" min="1" max="1000" class="form-control form-control-sm">
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1" for="fN">Alto <b>N</b> <span class="text-body-secondary">(y va de 1 a N)</span></label>
+                <input id="fN" type="number" min="1" max="1000" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div id="sizeInfo" class="form-text"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="leg">📢 Esquinas tumultuosas <span id="kBadge" class="badge text-bg-secondary"></span></legend>
+            <div class="form-text mt-0 mb-1">
+              Posición de cada actividad y su <b>nivel de intensidad v</b> (0 a 1000):
+              cuanto más alto, más molesta (la molestia es <code>distancia − v</code>).
+            </div>
+            <div id="srcWrap"></div>
+            <button id="addSrc" class="btn btn-sm btn-outline-secondary mt-1">+ Agregar tumultuosa</button>
+          </fieldset>
+
+          <fieldset>
+            <legend class="leg">🚧 Cuadras cortadas <span id="bBadge" class="badge text-bg-secondary"></span></legend>
+            <div class="form-text mt-0 mb-1">
+              Cada cuadra une una esquina con su vecina al <b>este</b> (x + 1) o al <b>norte</b> (y + 1).
+              No se puede transitar en ningún sentido.
+            </div>
+            <div id="cutWrap"></div>
+            <button id="addCut" class="btn btn-sm btn-outline-secondary mt-1">+ Agregar cuadra cortada</button>
+          </fieldset>
+
+          <div id="formError" class="alert alert-danger py-1 px-2 small m-0 d-none"></div>
+
+          <details class="sub">
+            <summary>🎲 Generar caso aleatorio</summary>
+            <div class="row g-2 mt-1">
+              <div class="col-4"><label class="form-label small mb-1" for="gM">Ancho M</label><input id="gM" type="number" min="1" max="1000" value="12" class="form-control form-control-sm"></div>
+              <div class="col-4"><label class="form-label small mb-1" for="gN">Alto N</label><input id="gN" type="number" min="1" max="1000" value="9" class="form-control form-control-sm"></div>
+              <div class="col-4"><label class="form-label small mb-1" for="gK">Tumultuosas K</label><input id="gK" type="number" min="1" max="100000" value="3" class="form-control form-control-sm"></div>
+              <div class="col-6"><label class="form-label small mb-1" for="gV">Nivel máximo de v</label><input id="gV" type="number" min="0" max="1000" value="5" class="form-control form-control-sm"></div>
+              <div class="col-6"><label class="form-label small mb-1" for="gB">Cuadras cortadas B</label><input id="gB" type="number" min="0" value="8" class="form-control form-control-sm"></div>
+            </div>
+            <div class="d-grid mt-2"><button id="btnGen" class="btn btn-sm btn-outline-primary">🎲 Generar</button></div>
+            <div class="form-text">Cada v se elige al azar entre 0 y el nivel máximo. Con más de 3600 esquinas no se dibuja la ciudad, pero sí se calcula la comparación.</div>
+          </details>
+
+          <details class="sub">
+            <summary>📄 Ver / editar como <code>barrio.in</code></summary>
+            <textarea id="input" class="form-control font-monospace mt-2" rows="9" spellcheck="false"></textarea>
+            <div class="form-text">
+              <code>M N K</code>, K líneas <code>x y v</code>, <code>B</code> y B líneas <code>x1 y1 x2 y2</code>.
+            </div>
+            <div id="inputError" class="alert alert-danger py-1 px-2 small mt-2 d-none"></div>
+            <div class="d-grid mt-2"><button class="btn btn-primary btn-sm" id="btnApply">▶ Aplicar texto</button></div>
+          </details>
         </div>
       </section>
 
       <section class="card">
-        <div class="card-header fw-semibold">💻 Pseudocódigo <span id="pseudoTitle" class="text-body-secondary fw-normal"></span></div>
-        <div class="card-body p-0">
-          <pre id="pseudo" class="pseudo m-0"></pre>
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="fw-semibold">📝 Pseudocódigo <span id="codeTitle" class="text-body-secondary fw-normal"></span></span>
+          <button class="btn btn-sm btn-link ms-auto p-0 collapse-btn" data-collapse="codeBody">▾ Ocultar</button>
         </div>
-      </section>
-
-      <section class="card">
-        <div class="card-header fw-semibold">Leyenda</div>
-        <div class="card-body small d-flex flex-column gap-2">
-          <div><span class="sw sw-src"></span>Esquina tumultuosa (fuente) con su intensidad <i>v</i></div>
-          <div><span class="sw sw-cur"></span>Esquina del paso actual</div>
-          <div><span class="sw sw-tent"></span>Distancia tentativa (en el heap)</div>
-          <div><span class="sw sw-rel"></span>Vecino relajado en este paso</div>
-          <div><span class="sw sw-pass"></span>Visitada por la pasada actual (fuerza bruta)</div>
-          <div><span class="sw sw-max"></span>Esquina óptima (más tranquila)</div>
-          <div><span class="sw sw-cut"></span>Cuadra cortada</div>
-          <hr class="my-1">
-          <div class="text-body-secondary">
-            El color de relleno indica qué fuente “gana” en cada esquina (la de menor molestia).
-            El número es la <b>molestia</b> = distancia − <i>v</i>.
-          </div>
-          <div class="text-body-secondary">
-            ✏️ <b>Clic en una cuadra</b>: cortarla o abrirla.<br>
-            ✏️ <b>Shift + clic en una esquina</b>: agregar o quitar una fuente con
-            <i>v</i> = <input type="number" id="newV" class="form-control form-control-sm d-inline-block newv" value="0" min="0" max="1000">.<br>
-            🔍 <b>Clic en una esquina</b>: ver cómo se calculó.
-          </div>
+        <div class="card-body p-0 resizable" id="codeBody">
+          <pre id="code" class="code m-0"></pre>
+          <details class="diffs">
+            <summary>Diferencias</summary>
+            <ul class="small mb-0">
+              <li><b>Fuerza bruta:</b> el min se calcula de forma explícita, comparando lo que aporta cada tumultuosa. El recorrido completo se repite K veces.
+                Complejidad: O(K · M · N) en tiempo, O(M · N + B) en espacio.</li>
+              <li><b>Dijkstra:</b> el min sale del orden del heap. Como siempre se extrae el menor valor, la primera vez que sale una esquina ya tiene su molestia mínima.
+                Hay un solo recorrido. Complejidad: O((M · N + K) · log(M · N + K)) en tiempo, O(M · N + K + B) en espacio.</li>
+              <li><b>En los dos:</b> el max se calcula recién al final, sobre todas las esquinas. Por eso Dijkstra lleva un heap de MÍNIMOS.</li>
+            </ul>
+          </details>
         </div>
       </section>
     </div>
 
-    <!-- ===== Columna derecha ===== -->
-    <div class="col-lg-8 col-xl-9 d-flex flex-column gap-3">
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
+         title="Arrastrá para cambiar el ancho del panel · doble clic: tamaño original"></div>
+
+    <!-- ===== Panel principal ===== -->
+    <div class="mainpane d-flex flex-column gap-3">
 
       <section class="card result-card">
         <div class="card-body d-flex flex-wrap gap-4 align-items-start">
@@ -122,35 +170,59 @@
         <div class="card-header d-flex align-items-center flex-wrap gap-2">
           <span class="fw-semibold">🗺️ Ciudad</span>
           <span id="stepInfo" class="badge text-bg-dark border"></span>
-          <span class="ms-auto small d-flex align-items-center gap-2">
-            Colorear por
-            <select id="colorMode" class="form-select form-select-sm w-auto">
-              <option value="owner">fuente que gana</option>
-              <option value="heat">molestia (mapa de calor)</option>
+          <span class="ms-auto small d-flex align-items-center gap-2 flex-wrap">
+            <select id="viewMode" class="form-select form-select-sm w-auto" aria-label="Vista">
+              <option value="grid">Vista: grilla</option>
+              <option value="table">Vista: tabla de molestias</option>
+            </select>
+            <select id="colorMode" class="form-select form-select-sm w-auto" aria-label="Color">
+              <option value="owner">Color: tumultuosa que gana</option>
+              <option value="heat">Color: mapa de calor</option>
             </select>
           </span>
         </div>
         <div class="card-body">
           <div id="gridWrap" class="grid-wrap"></div>
+          <div id="tableWrap" class="table-wrap d-none"></div>
           <input type="range" class="form-range mt-2" id="scrub" min="0" max="0" value="0" aria-label="Línea de tiempo">
+          <div class="legend small text-body-secondary">
+            <span><span class="sw sw-src"></span>tumultuosa (v en el círculo)</span>
+            <span><span class="sw sw-cur"></span>paso actual</span>
+            <span><span class="sw sw-pass"></span>alcanzada por el BFS actual</span>
+            <span><span class="sw sw-tent"></span>en el heap (no fijada)</span>
+            <span><span class="sw sw-rel"></span>recién agregada</span>
+            <span><span class="sw sw-max"></span>esquina óptima</span>
+            <span><span class="sw sw-cut"></span>cuadra cortada</span>
+          </div>
+          <div class="small text-body-secondary mt-1">
+            ✏️ <b>Clic en una cuadra</b>: cortarla o abrirla · <b>Shift + clic en una esquina</b>: agregar o quitar una tumultuosa con
+            v = <input type="number" id="newV" class="form-control form-control-sm d-inline-block newv" value="0" min="0" max="1000"> ·
+            🔍 <b>Clic en una esquina</b>: ver cómo se calculó.
+          </div>
         </div>
       </section>
 
-      <section class="card">
-        <div class="card-header fw-semibold">🔍 Explicación paso a paso</div>
-        <div class="card-body">
-          <div id="explain" class="explain"></div>
+      <div class="row g-3">
+        <div class="col-xl-7">
+          <section class="card h-100">
+            <div class="card-header fw-semibold">🔍 Explicación paso a paso</div>
+            <div class="card-body"><div id="explain" class="explain"></div></div>
+          </section>
         </div>
-      </section>
+        <div class="col-xl-5">
+          <section class="card h-100">
+            <div class="card-header fw-semibold" id="queueTitle">📋 Cola</div>
+            <div class="card-body"><div id="queue" class="queue small"></div></div>
+          </section>
+        </div>
+      </div>
 
       <section class="card">
-        <div class="card-header fw-semibold">📊 Comparación de técnicas (sobre esta entrada)</div>
+        <div class="card-header fw-semibold">📊 Comparación de técnicas (sobre este caso)</div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-sm align-middle mb-2 cmp">
-              <thead>
-                <tr><th></th><th>🔨 Fuerza bruta</th><th>⚡ Greedy</th></tr>
-              </thead>
+              <thead><tr><th></th><th>🔨 Fuerza bruta</th><th>⚡ Greedy</th></tr></thead>
               <tbody id="cmpBody"></tbody>
             </table>
           </div>
@@ -161,32 +233,58 @@
       <details class="card">
         <summary class="card-header fw-semibold">🧠 Idea y complejidad</summary>
         <div class="card-body small">
-          <h6>🔨 Fuerza bruta: un Dijkstra por cada fuente</h6>
+          <h6>🔨 Fuerza bruta</h6>
           <p>
-            Para cada esquina tumultuosa <i>s</i> se calcula la distancia a todas las esquinas
-            (sin pasar por cuadras cortadas) y se actualiza
-            <code>mejor[c] = min(mejor[c], dist<sub>s</sub>(c) − v<sub>s</sub>)</code>.
-            Al final se busca el máximo de <code>mejor</code>.
-            Como todas las cuadras miden 1, ese Dijkstra se comporta igual que un BFS.
+            Se evalúan explícitamente todos los pares (esquina tumultuosa, esquina de la ciudad).
+            Para cada tumultuosa <i>t</i> se hace un <b>BFS</b> con una cola, que en un grafo con aristas de peso 1
+            da la distancia <i>d</i> a todas las esquinas, y en cada esquina se actualiza
+            <code>min(actual, d − v<sub>t</sub>)</code>. Al terminar se toma el máximo.
           </p>
-          <p>Complejidad: <b>O(K · (M·N))</b> recorridos de grilla (con heap, O(K · M·N · log(M·N))).
-            En el peor caso (M = N = 1000, K = 100 000) son unos 10<sup>11</sup> pasos: no termina a tiempo.</p>
+          <p>
+            La ciudad es un grafo implícito: los vecinos de <code>(x, y)</code> se calculan al vuelo.
+            Las cuadras cortadas se guardan en un <i>set</i> como pares no ordenados de esquinas (<code>frozenset</code>),
+            así el corte bloquea los dos sentidos sin guardarlo dos veces.
+          </p>
+          <ul>
+            <li><b>Temporal:</b> O(K · M · N). Cada BFS cuesta O(V + E) = O(M · N) y se hacen K. Con las cotas son 10<sup>5</sup> · 10<sup>6</sup> = 10<sup>11</sup> operaciones: inviable.</li>
+            <li><b>Espacial:</b> O(M · N + B). Cada BFS se descarta al terminar, así que la memoria no se multiplica por K.</li>
+            <li><b>Favorable cuando</b> K es chico (con K = 1 es un solo BFS), cuando se necesita un resultado de referencia para validar otra solución, o cuando interesa la información de cada tumultuosa por separado.</li>
+            <li><b>Limitaciones:</b> repite K veces un recorrido completo, aunque la mayoría de las tumultuosas no sea la que más molesta a casi ninguna esquina.</li>
+          </ul>
 
-          <h6>⚡ Greedy: un solo Dijkstra multi-fuente</h6>
+          <h6>⚡ Greedy: Dijkstra con varios orígenes</h6>
           <p>
-            Restar <i>v</i> es lo mismo que hacer que la fuente <i>arranque</i> con distancia −<i>v</i>.
-            Entonces la menor molestia de cada esquina es su distancia más corta desde una
-            <b>súper-fuente</b> unida a cada tumultuosa con peso −<i>v</i>.
-            Para no tener pesos negativos se suma 1000 a todo:
-            <code>dist[s] = 1000 − v</code>, y al final <code>molestia = dist − 1000</code>.
+            En cada paso se toma la esquina con menor molestia pendiente y se la fija como definitiva, sin volver a revisarla nunca.
+            No hace falta recorrer la ciudad una vez por tumultuosa: todas se propagan <b>a la vez</b>, cada una arrancando con su molestia inicial −<i>v</i>.
+          </p>
+          <ol>
+            <li>Se cargan todas las tumultuosas en el heap con valor −<i>v</i>.</li>
+            <li>Se saca del heap la esquina con menor valor. Si ya estaba fijada, se descarta. Si no, ese valor es su molestia definitiva.</li>
+            <li>Cada vecina todavía no fijada entra al heap con el valor de la esquina actual más 1, porque está a una cuadra más.</li>
+            <li>Cuando el heap se vacía, todas las esquinas tienen su molestia y se busca el máximo.</li>
+          </ol>
+          <p>
+            <b>Por qué la elección greedy es correcta.</b> Sea un origen ficticio <i>S</i> conectado con cada tumultuosa <i>t</i>
+            por una arista de peso 1000 − v<sub>t</sub> ≥ 0. La distancia desde <i>S</i> hasta una esquina <i>c</i> es
+            min<sub>t</sub>(1000 − v<sub>t</sub> + d(t, c)) = 1000 + m(c): la molestia de <i>c</i> más una constante.
+            Todas las aristas pesan lo mismo o más que 0, así que vale la garantía de Dijkstra: cuando una esquina sale del heap con el menor
+            valor pendiente, ningún otro camino puede mejorarla. El algoritmo es exactamente ese Dijkstra, con la constante 1000 restada de todos los valores.
           </p>
           <p>
-            <b>¿Por qué es greedy?</b> En cada paso se fija la esquina con menor distancia tentativa
-            y no se revisa nunca más. Es correcto porque todas las cuadras pesan 1 ≥ 0:
-            ningún camino que se descubra después puede mejorarla.
+            <b>Es un heap de mínimos.</b> Aunque el problema pide maximizar, el máximo se toma recién al final. Para cada esquina se busca la tumultuosa que
+            <b>más</b> la molesta, la de <b>menor</b> d − v. Con un heap de máximos que actualiza cuando el valor es mayor, el algoritmo nunca terminaría:
+            ir a una vecina y volver suma 2, y eso siempre “mejora” el valor anterior.
           </p>
-          <p>Complejidad: <b>O(M·N · log(M·N))</b>, unos 2·10<sup>7</sup> pasos en el peor caso.
-            Con baldes en vez de heap (algoritmo de Dial) baja a O(M·N + 1000).</p>
+          <ul>
+            <li><b>Temporal:</b> O((M · N + K) · log(M · N + K)). El heap recibe a lo sumo K + 4 · M · N inserciones: unos 10<sup>8</sup> pasos con las cotas del problema.</li>
+            <li><b>Espacial:</b> O(M · N + K + B), por las copias repetidas en el heap.</li>
+            <li><b>Favorable cuando</b> hay muchos orígenes, cuando los valores iniciales son distintos (un BFS multi-origen supone que todos arrancan en 0)
+              o si las cuadras tuvieran pesos distintos de 1.</li>
+            <li><b>Limitaciones:</b> requiere pesos no negativos en las cuadras, paga un factor log aunque todas pesen 1
+              y solo devuelve la molestia mínima, no lo que aporta cada tumultuosa.</li>
+            <li><b>Mejora posible:</b> como las cuadras pesan 1 y −1000 ≤ −v ≤ 0, el heap se puede reemplazar por colas indexadas por valor
+              (algoritmo de Dial): O(M · N + K + 1000), sin el log.</li>
+          </ul>
         </div>
       </details>
     </div>

@@ -164,8 +164,8 @@ details.sub { border-top: 1px solid var(--bs-border-color); padding-top: .75rem;
 .explain { min-height: 4.5rem; }
 .explain .step-box { background: var(--bs-tertiary-bg); border-left: 4px solid var(--c-tent); padding: .5rem .75rem; border-radius: .25rem; }
 .explain table { font-size: .85rem; }
-.queue { max-height: 480px; overflow-y: auto; }
-.trace-scroll { max-height: 260px; overflow-y: auto; }
+#queueBody:not([style*="height"]) { max-height: 48vh; }
+.trace-scroll { max-height: 140px; overflow-y: auto; }
 .trace-scroll thead th { position: sticky; top: 0; background: var(--bs-body-bg); }
 .queue table { font-size: .8rem; margin: 0; }
 .queue .chip { display: inline-block; font-family: var(--bs-font-monospace); font-size: .75rem; padding: .05rem .35rem; margin: .1rem; border-radius: .25rem; background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); }

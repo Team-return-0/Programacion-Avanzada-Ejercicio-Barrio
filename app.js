@@ -2,7 +2,7 @@
 /* =====================================================================
    Elección del mejor barrio — visualizador
    🔨 Fuerza bruta: un BFS por cada tumultuosa
-   ⚡ Greedy: Dijkstra con varios orígenes (valor inicial −v)
+   ⚡ Dijkstra (multi-fuente), con valor inicial −v
    ===================================================================== */
 
 const MAX_DRAW = 3600;        // máximo de esquinas que se dibujan
@@ -89,7 +89,7 @@ const CODE = {
     '        (m, u) <- extraer minimo de heap',
     '        si u esta en molestia:                   // copia repetida, ya fijada',
     '            continuar',
-    '        molestia[u] <- m                         // eleccion greedy: definitiva',
+    '        molestia[u] <- m                         // valor definitivo',
     '        para cada w en VECINOS(u, M, N, cortes):',
     '            si w no esta en molestia:',
     '                insertar (m + 1, w) en heap',
@@ -281,7 +281,7 @@ function runBrute(record) {
   return { events: ev, res: finalize(molestia), owner, counts: { visits, edges, writes: updates, stale: 0 } };
 }
 
-/* ⚡ Greedy: Dijkstra multi-origen. Cada tumultuosa entra al heap con −v;
+/* ⚡ Dijkstra (multi-fuente). Cada tumultuosa entra al heap con −v;
    una esquina recibe su molestia recién cuando sale del heap por primera vez. */
 function runGreedy(record) {
   const V = P.V;
@@ -341,7 +341,7 @@ function freshState() {
     mark: new Int32Array(P.V).fill(-1),
     curSrc: -1, cur: -1, rel: [], final: false, ev: null,
     disc: [], head: 0, phase: '',   // cola del BFS de la pasada actual
-    cnt: new Int32Array(P.V), heapSize: 0,   // copias de cada esquina en el heap (greedy)
+    cnt: new Int32Array(P.V), heapSize: 0,   // copias de cada esquina en el heap (Dijkstra)
   };
 }
 
@@ -360,7 +360,7 @@ function apply(st, e) {
       st.cur = e.u; st.phase = 'upd';
       if (e.imp) { st.val[e.u] = e.m; st.owner[e.u] = e.i; }
       break;
-    /* en el greedy, val de una esquina no fijada = menor valor con el que está en el heap */
+    /* en Dijkstra, val de una esquina no fijada = menor valor con el que está en el heap */
     case 'src': {
       const m = -P.src[e.i].v;
       st.cur = e.u; st.cnt[e.u]++; st.heapSize++;
@@ -531,7 +531,7 @@ function renderTable() {
   wrap.innerHTML = h + '</tbody></table><div class="small text-body-secondary text-center mt-1">Valores de <code>molestia</code> en este paso (subrayadas: tumultuosas; en itálica: todavía en el heap).</div>';
 }
 
-/* aristas del camino (greedy) desde la esquina hasta su tumultuosa */
+/* aristas del camino (Dijkstra) desde la esquina hasta su tumultuosa */
 function pathEdges(u) {
   const set = new Set(), par = RUN.greedy.parent;
   let guard = 0;
@@ -570,7 +570,7 @@ function highlightPseudo(line) {
 function renderCode() {
   const e = S && S.ev;
   const hl = new Set(e ? CODE_LINES[mode][e.t] : (step === 0 ? CODE_LINES[mode].init : []));
-  $('#codeTitle').textContent = mode === 'brute' ? '· fuerza bruta' : '· Dijkstra (greedy)';
+  $('#codeTitle').textContent = mode === 'brute' ? '· fuerza bruta' : '· Dijkstra (multi-fuente)';
   $('#code').innerHTML = CODE[mode].map((l, i) =>
     `<span class="ln${hl.has(i) ? ' hl' : ''}"><span class="no">${i + 1}</span>${highlightPseudo(l)}</span>`).join('');
 }
@@ -700,7 +700,7 @@ function srcLabel(i) {
 function explainStart() {
   return mode === 'brute'
     ? `🔨 <b>Fuerza bruta.</b> <code>molestia</code> arranca vacío (todas las esquinas en ∞). Para cada una de las ${P.src.length} tumultuosas se hace un BFS completo y después se actualiza <code>molestia[esquina] = min(actual, d − v)</code>.`
-    : `⚡ <b>Dijkstra multi-origen.</b> <code>molestia</code> arranca vacío y guarda solo las esquinas ya fijadas. Se insertan <b>todas</b> las tumultuosas en un heap de mínimos con valor <code>−v</code> y se hace <b>un solo</b> recorrido.`;
+    : `⚡ <b>Dijkstra (multi-fuente).</b> <code>molestia</code> arranca vacío y guarda solo las esquinas ya fijadas. Se insertan <b>todas</b> las tumultuosas en un heap de mínimos con valor <code>−v</code> y se hace <b>un solo</b> recorrido.`;
 }
 
 function explainEvent(e) {
@@ -722,7 +722,7 @@ function explainEvent(e) {
       return `📥 ${srcLabel(e.i)}: <code>insertar (−${P.src[e.i].v}, (${P.src[e.i].x}, ${P.src[e.i].y})) en heap</code>. Todos los orígenes entran a la vez; cuanto más intensa la tumultuosa, antes “arranca”.`;
     case 'settle':
       return `⛏️ <code>extraer minimo</code> → <b>(${e.m}, ${fmt(e.u)})</b>. La esquina no estaba en <code>molestia</code>, así que <code>molestia${fmt(e.u)} ← ${e.m}</code>. ` +
-        `<b>Elección greedy:</b> es definitiva, porque siempre sale el menor valor y cada cuadra suma 1: ninguna copia que salga después puede ser menor. ` +
+        `<b>Elección de Dijkstra:</b> es definitiva, porque siempre sale el menor valor y cada cuadra suma 1: ninguna copia que salga después puede ser menor. ` +
         (e.ins.length ? `Se insertan con <code>${e.m} + 1 = ${e.m + 1}</code> los vecinos todavía no fijados: ${e.ins.map(fmt).join(', ')}.` : 'Todos sus vecinos ya estaban fijados: no se inserta nada.');
     case 'stale':
       return `🗑️ <code>extraer minimo</code> → (${e.m}, ${fmt(e.u)}), pero esa esquina <b>ya está en molestia</b>, fijada con un valor menor o igual: es una copia repetida (entró una vez por cada vecina que la alcanzó). Se descarta (<code>continuar</code>).`;
@@ -751,7 +751,7 @@ function explainNode(u) {
   }
   if (mode === 'greedy' && isFinite(fin)) {
     const o = RUN.greedy.owner[u], steps = pathEdges(u).size;
-    body += `<p class="mt-2 mb-0">En el greedy llega desde ${srcLabel(o)}: −${P.src[o].v} + ${steps} cuadra(s) = ${fin}. Al final del recorrido el camino se marca en verde.</p>`;
+    body += `<p class="mt-2 mb-0">Con Dijkstra llega desde ${srcLabel(o)}: −${P.src[o].v} + ${steps} cuadra(s) = ${fin}. Al final del recorrido el camino se marca en verde.</p>`;
   }
   if (RUN[mode].res.list.includes(u)) body += '<p class="mt-2 mb-0">⭐ Es una de las esquinas óptimas.</p>';
   setTimeout(() => { const b = $('#closeSel'); if (b) b.onclick = () => { selected = -1; render(); }; });
@@ -782,7 +782,7 @@ function renderCompare() {
     '<tr><td>Simplicidad</td><td>traducción literal de la definición</td><td>necesita un argumento de correctitud (el origen ficticio)</td></tr>';
   const same = b && b.res.max === g.res.max && b.res.list.join() === g.res.list.join();
   $('#cmpNote').innerHTML = b
-    ? `Con este caso la fuerza bruta hace <b>${(bOps / gOps).toFixed(1)}×</b> el trabajo del greedy; la diferencia crece con K. Resultado de ambas: ${same ? '✅ coinciden' : '❌ NO coinciden'}.`
+    ? `Con este caso la fuerza bruta hace <b>${(bOps / gOps).toFixed(1)}×</b> el trabajo de Dijkstra (multi-fuente); la diferencia crece con K. Resultado de ambas: ${same ? '✅ coinciden' : '❌ NO coinciden'}.`
     : `La fuerza bruta no se ejecutó en el navegador: haría unas ${fmtN(K * P.V)} visitas de esquinas.`;
 }
 
@@ -1180,7 +1180,7 @@ function init() {
     try { text = decodeURIComponent(location.hash.slice(4)); } catch (_) {}
     if (text && loadText(text)) { markCustom(); $('#presetDesc').textContent = 'Caso cargado desde el link compartido.'; return; }
   }
-  loadPreset('concreto');
+  loadPreset('modificado');
 }
 
 init();

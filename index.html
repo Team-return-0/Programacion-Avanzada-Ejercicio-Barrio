@@ -19,7 +19,7 @@
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="btn-group btn-group-sm" role="group" aria-label="Técnica">
       <button class="btn btn-outline-light" id="modeBrute" data-mode="brute">🔨 Fuerza bruta</button>
-      <button class="btn btn-outline-light" id="modeGreedy" data-mode="greedy">⚡ Greedy</button>
+      <button class="btn btn-outline-light" id="modeGreedy" data-mode="greedy">⚡ Dijkstra (multi-fuente)</button>
     </div>
 
     <div class="btn-group btn-group-sm" role="group" aria-label="Pasos">
@@ -46,6 +46,34 @@
 
     <!-- ===== Panel izquierdo (ancho ajustable) ===== -->
     <div class="side d-flex flex-column gap-3" id="side">
+
+      <section class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="fw-semibold" id="queueTitle">📋 Cola</span>
+          <button class="btn btn-sm btn-link ms-auto p-0 collapse-btn" data-collapse="queueBody">▾ Ocultar</button>
+        </div>
+        <div class="card-body resizable" id="queueBody"><div id="queue" class="queue small"></div></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="fw-semibold">📝 Pseudocódigo <span id="codeTitle" class="text-body-secondary fw-normal"></span></span>
+          <button class="btn btn-sm btn-link ms-auto p-0 collapse-btn" data-collapse="codeBody">▾ Ocultar</button>
+        </div>
+        <div class="card-body p-0 resizable" id="codeBody">
+          <pre id="code" class="code m-0"></pre>
+          <details class="diffs">
+            <summary>Diferencias</summary>
+            <ul class="small mb-0">
+              <li><b>Fuerza bruta:</b> el min se calcula de forma explícita, comparando lo que aporta cada tumultuosa. El recorrido completo se repite K veces.
+                Complejidad: O(K · M · N) en tiempo, O(M · N + B) en espacio.</li>
+              <li><b>Dijkstra:</b> el min sale del orden del heap. Como siempre se extrae el menor valor, la primera vez que sale una esquina ya tiene su molestia mínima.
+                Hay un solo recorrido. Complejidad: O((M · N + K) · log(M · N + K)) en tiempo, O(M · N + K + B) en espacio.</li>
+              <li><b>En los dos:</b> el max se calcula recién al final, sobre todas las esquinas. Por eso Dijkstra lleva un heap de MÍNIMOS.</li>
+            </ul>
+          </details>
+        </div>
+      </section>
 
       <section class="card">
         <div class="card-header d-flex align-items-center gap-2">
@@ -121,26 +149,6 @@
           </details>
         </div>
       </section>
-
-      <section class="card">
-        <div class="card-header d-flex align-items-center gap-2">
-          <span class="fw-semibold">📝 Pseudocódigo <span id="codeTitle" class="text-body-secondary fw-normal"></span></span>
-          <button class="btn btn-sm btn-link ms-auto p-0 collapse-btn" data-collapse="codeBody">▾ Ocultar</button>
-        </div>
-        <div class="card-body p-0 resizable" id="codeBody">
-          <pre id="code" class="code m-0"></pre>
-          <details class="diffs">
-            <summary>Diferencias</summary>
-            <ul class="small mb-0">
-              <li><b>Fuerza bruta:</b> el min se calcula de forma explícita, comparando lo que aporta cada tumultuosa. El recorrido completo se repite K veces.
-                Complejidad: O(K · M · N) en tiempo, O(M · N + B) en espacio.</li>
-              <li><b>Dijkstra:</b> el min sale del orden del heap. Como siempre se extrae el menor valor, la primera vez que sale una esquina ya tiene su molestia mínima.
-                Hay un solo recorrido. Complejidad: O((M · N + K) · log(M · N + K)) en tiempo, O(M · N + K + B) en espacio.</li>
-              <li><b>En los dos:</b> el max se calcula recién al final, sobre todas las esquinas. Por eso Dijkstra lleva un heap de MÍNIMOS.</li>
-            </ul>
-          </details>
-        </div>
-      </section>
     </div>
 
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"
@@ -202,27 +210,17 @@
         </div>
       </section>
 
-      <div class="row g-3">
-        <div class="col-xl-7">
-          <section class="card h-100">
-            <div class="card-header fw-semibold">🔍 Explicación paso a paso</div>
-            <div class="card-body"><div id="explain" class="explain"></div></div>
-          </section>
-        </div>
-        <div class="col-xl-5">
-          <section class="card h-100">
-            <div class="card-header fw-semibold" id="queueTitle">📋 Cola</div>
-            <div class="card-body"><div id="queue" class="queue small"></div></div>
-          </section>
-        </div>
-      </div>
+      <section class="card">
+        <div class="card-header fw-semibold">🔍 Explicación paso a paso</div>
+        <div class="card-body"><div id="explain" class="explain"></div></div>
+      </section>
 
       <section class="card">
         <div class="card-header fw-semibold">📊 Comparación de técnicas (sobre este caso)</div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-sm align-middle mb-2 cmp">
-              <thead><tr><th></th><th>🔨 Fuerza bruta</th><th>⚡ Greedy</th></tr></thead>
+              <thead><tr><th></th><th>🔨 Fuerza bruta</th><th>⚡ Dijkstra (multi-fuente)</th></tr></thead>
               <tbody id="cmpBody"></tbody>
             </table>
           </div>
@@ -252,7 +250,7 @@
             <li><b>Limitaciones:</b> repite K veces un recorrido completo, aunque la mayoría de las tumultuosas no sea la que más molesta a casi ninguna esquina.</li>
           </ul>
 
-          <h6>⚡ Greedy: Dijkstra con varios orígenes</h6>
+          <h6>⚡ Dijkstra (multi-fuente)</h6>
           <p>
             En cada paso se toma la esquina con menor molestia pendiente y se la fija como definitiva, sin volver a revisarla nunca.
             No hace falta recorrer la ciudad una vez por tumultuosa: todas se propagan <b>a la vez</b>, cada una arrancando con su molestia inicial −<i>v</i>.
@@ -264,7 +262,7 @@
             <li>Cuando el heap se vacía, todas las esquinas tienen su molestia y se busca el máximo.</li>
           </ol>
           <p>
-            <b>Por qué la elección greedy es correcta.</b> Sea un origen ficticio <i>S</i> conectado con cada tumultuosa <i>t</i>
+            <b>Por qué la elección es correcta.</b> Sea un origen ficticio <i>S</i> conectado con cada tumultuosa <i>t</i>
             por una arista de peso 1000 − v<sub>t</sub> ≥ 0. La distancia desde <i>S</i> hasta una esquina <i>c</i> es
             min<sub>t</sub>(1000 − v<sub>t</sub> + d(t, c)) = 1000 + m(c): la molestia de <i>c</i> más una constante.
             Todas las aristas pesan lo mismo o más que 0, así que vale la garantía de Dijkstra: cuando una esquina sale del heap con el menor
